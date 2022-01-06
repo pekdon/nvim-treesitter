@@ -162,21 +162,35 @@ function M.select_download_commands(repo, project_name, cache_folder, revision, 
         },
       },
       M.select_mkdir_cmd(project_name .. "-tmp", cache_folder, "Creating temporary directory"),
+      -- not all tar implementations have z flag available, decompress
+      -- then extract to be as compatible as possible
+      {
+        cmd = "gzip",
+        info = "Decompressing...",
+        err = "Error during tarball decompression.",
+        opts = {
+          args = {
+            "-d",
+            project_name .. ".tar.gz",
+          },
+          cwd = cache_folder,
+        },
+      },
+      -- again, not using -C and instead changing the working directory
+      -- to be as compatible as possible
       {
         cmd = "tar",
         info = "Extracting...",
         err = "Error during tarball extraction.",
         opts = {
           args = {
-            "-xvzf",
-            project_name .. ".tar.gz",
-            "-C",
-            project_name .. "-tmp",
+            "-xvf",
+            utils.join_path(cache_folder, project_name .. ".tar")
           },
-          cwd = cache_folder,
+          cwd = utils.join_path(cache_folder, project_name .. "-tmp")
         },
       },
-      M.select_rm_file_cmd(cache_folder .. path_sep .. project_name .. ".tar.gz"),
+      M.select_rm_file_cmd(cache_folder .. path_sep .. project_name .. ".tar"),
       M.select_mv_cmd(
         utils.join_path(project_name .. "-tmp", url:match "[^/]-$" .. "-" .. revision),
         project_name,
